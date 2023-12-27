@@ -1,126 +1,11 @@
+import re
 import ast
 import random
+import pandas as pd
+import builtins
 
-
-class Perturber:
-    def __init__(self):
-        self.expr_mutator = ExprMutator()
-        self.var_mutator = VariableMutator()
-        self.func_mutator = FunctionMutator()
-
-    # High Level Helpers
-    def randomly_modify_code(self, code):
-        """
-        Randomly modify Python code by mutating expressions or replacing variables.
-
-        args:
-            code: str
-                The Python code to modify.
-
-        return:
-            output: str
-                The modified Python code.
-        """
-        tree = ast.parse(code)
-        parsed_tree = ast.walk(tree)
-
-
-        var_nodes = self.var_mutator.collect_var_nodes(parsed_tree)
-        expr_nodes = self.expr_mutator.collect_expr_nodes(parsed_tree)
-
-
-        if random.choice([True, False]):
-            modified_tree = self.var_mutator.replace_variable(tree, var_nodes)
-        else:
-            modified_tree = self.expr_mutator.adjust_expr(tree, expr_nodes)
-
-
-        return ast.unparse(modified_tree)
-
-
-    def randomly_modify_expression(self, code):
-        """
-        Randomly modify Python code by mutating an expression, if possible.
-
-        args:
-            code: str
-                The Python code to modify.
-
-        return:
-            output: str
-                The modified Python code.
-        """
-        tree = ast.parse(code)
-        parsed_tree = ast.walk(tree)
-        expr_nodes = self.expr_mutator.collect_expr_nodes(parsed_tree)
-
-        if len(expr_nodes) == 0: return code
-        modified_tree = self.expr_mutator.adjust_expr(tree, expr_nodes)
-        return ast.unparse(modified_tree)
-
-
-    def randomly_modify_variable(self, code):
-        """
-        Randomly modify Python code by mutating a variable, if possible.
-
-        args:
-            code: str
-                The Python code to modify.
-
-        return:
-            output: str
-                The modified Python code.
-        """
-        tree = ast.parse(code)
-        parsed_tree = ast.walk(tree)
-        var_nodes = self.var_mutator.collect_var_nodes(parsed_tree)
-        if len(var_nodes) < 2: return code
-
-        modified_tree = self.var_mutator.replace_variable(tree, var_nodes)
-        return ast.unparse(modified_tree)
-
-
-    def randomly_modify_functioncall(self, code):
-        """
-        Randomly modify Python code by replacing a function call, if possible.
-
-        args:
-            code: str
-                The Python code to modify.
-
-        return:
-            output: str
-                The modified Python code.
-        """
-        tree = ast.parse(code)
-        parsed_tree = ast.walk(tree)
-        func_call_nodes = self.func_mutator.collect_func_call_nodes(parsed_tree)
-
-        if len(func_call_nodes) < 2:
-            return code
-
-        modified_tree = self.func_mutator.replace_function_call(tree, func_call_nodes)
-        return ast.unparse(modified_tree)
-
-
-    def same_tree(self, a, b):
-        """
-        Check if two Python functions have the same Abstract Syntax Tree.
-
-        args:
-            a: str
-                The first Python function in string format.
-            b: str
-                The second Python function in string format.
-
-        return:
-            output: bool
-                True if the functions have the same tree, False otherwise.
-        """
-        return ast.dump(ast.parse(a)) == ast.dump(ast.parse(b))
-
-
-
+import time as time
+import signal
 
 
 class ExprMutator:
@@ -331,9 +216,6 @@ class ExprMutator:
         return node
 
 
-
-
-
 class VariableMutator:
     def __init__(self):
         pass
@@ -393,10 +275,6 @@ class VariableMutator:
         return tree
 
 
-
-
-
-
 class FunctionMutator:
     def __init__(self):
         pass
@@ -449,3 +327,121 @@ class FunctionMutator:
         # Replace the function call
         node_to_replace.func = replacement_node.func
         return tree
+
+
+class Perturber:
+    def __init__(self):
+        self.expr_mutator = ExprMutator()
+        self.var_mutator = VariableMutator()
+        self.func_mutator = FunctionMutator()
+
+    # High Level Helpers
+    def randomly_modify_code(self, code):
+        """
+        Randomly modify Python code by mutating expressions or replacing variables.
+
+        args:
+            code: str
+                The Python code to modify.
+
+        return:
+            output: str
+                The modified Python code.
+        """
+        tree = ast.parse(code)
+        parsed_tree = ast.walk(tree)
+
+
+        var_nodes = self.var_mutator.collect_var_nodes(parsed_tree)
+        expr_nodes = self.expr_mutator.collect_expr_nodes(parsed_tree)
+
+
+        if random.choice([True, False]):
+            modified_tree = self.var_mutator.replace_variable(tree, var_nodes)
+        else:
+            modified_tree = self.expr_mutator.adjust_expr(tree, expr_nodes)
+
+
+        return ast.unparse(modified_tree)
+
+
+    def randomly_modify_expression(self, code):
+        """
+        Randomly modify Python code by mutating an expression, if possible.
+
+        args:
+            code: str
+                The Python code to modify.
+
+        return:
+            output: str
+                The modified Python code.
+        """
+        tree = ast.parse(code)
+        parsed_tree = ast.walk(tree)
+        expr_nodes = self.expr_mutator.collect_expr_nodes(parsed_tree)
+
+        if len(expr_nodes) == 0: return code
+        modified_tree = self.expr_mutator.adjust_expr(tree, expr_nodes)
+        return ast.unparse(modified_tree)
+
+
+    def randomly_modify_variable(self, code):
+        """
+        Randomly modify Python code by mutating a variable, if possible.
+
+        args:
+            code: str
+                The Python code to modify.
+
+        return:
+            output: str
+                The modified Python code.
+        """
+        tree = ast.parse(code)
+        parsed_tree = ast.walk(tree)
+        var_nodes = self.var_mutator.collect_var_nodes(parsed_tree)
+        if len(var_nodes) < 2: return code
+
+        modified_tree = self.var_mutator.replace_variable(tree, var_nodes)
+        return ast.unparse(modified_tree)
+
+
+    def randomly_modify_functioncall(self, code):
+        """
+        Randomly modify Python code by replacing a function call, if possible.
+
+        args:
+            code: str
+                The Python code to modify.
+
+        return:
+            output: str
+                The modified Python code.
+        """
+        tree = ast.parse(code)
+        parsed_tree = ast.walk(tree)
+        func_call_nodes = self.func_mutator.collect_func_call_nodes(parsed_tree)
+
+        if len(func_call_nodes) < 2:
+            return code
+
+        modified_tree = self.func_mutator.replace_function_call(tree, func_call_nodes)
+        return ast.unparse(modified_tree)
+
+
+    def same_tree(self, a, b):
+        """
+        Check if two Python functions have the same Abstract Syntax Tree.
+
+        args:
+            a: str
+                The first Python function in string format.
+            b: str
+                The second Python function in string format.
+
+        return:
+            output: bool
+                True if the functions have the same tree, False otherwise.
+        """
+        return ast.dump(ast.parse(a)) == ast.dump(ast.parse(b))
