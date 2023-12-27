@@ -337,10 +337,12 @@ class ExprMutator:
 class VariableMutator:
     def __init__(self):
         pass
+    
 
     def collect_var_nodes(self, parsed_tree):
         """
-        Create a list of all the variable nodes in the parsed tree generator.
+        Create a list of all the variable nodes in the parsed tree generator,
+        excluding those that match the lowercase names of built-in types.
 
         args:
             parsed_tree: generator
@@ -348,23 +350,27 @@ class VariableMutator:
 
         return:
             output: List
-                The list of all variable nodes in the generator.
+                The list of all variable nodes in the generator, excluding matches with built-in types.
         """
+        builtin_types = [t.lower() for t in dir(builtins) if isinstance(getattr(builtins, t), type)]
         var_nodes = []
         for node in parsed_tree:
-            # Check if the node is a function definition
             if isinstance(node, ast.FunctionDef):
-                # Collect variable nodes from the function body
+                # Collecting function arguments
+                for arg in node.args.args:
+                    if arg.arg.lower() not in builtin_types:
+                        var_nodes.append(ast.Name(id=arg.arg, ctx=ast.Load()))
+
+                # Collecting variable nodes from the function body
                 for body_node in ast.walk(node):
                     if isinstance(body_node, ast.Name) and isinstance(body_node.ctx, ast.Load):
-                        var_nodes.append(body_node)
-
+                        if body_node.id.lower() not in builtin_types:
+                            var_nodes.append(body_node)
         return var_nodes
-
 
     def replace_variable(self, tree: ast.AST, var_nodes):
         """
-        Replace one variable with another in the AST.
+        Replace one variable with another in the AST, chosen from the union of ARGS and CODEVARS.
 
         args:
             tree: ast.AST
@@ -374,15 +380,18 @@ class VariableMutator:
             output: ast.AST
                 The abstract syntax tree with replaced variables.
         """
+        if len(var_nodes) < 2: return tree
+
         # Choose a node to replace and remove it from the list of potential replacements
         node_to_replace = random.choice(var_nodes)
         potential_replacements = [node for node in var_nodes if node.id != node_to_replace.id]
+        if not potential_replacements:
+            return tree
 
-        # Guarantee a different choice of node for the replacement
-        if len(potential_replacements) == 0: return tree
         replacement_node = random.choice(potential_replacements)
         node_to_replace.id = replacement_node.id
         return tree
+
 
 
 
